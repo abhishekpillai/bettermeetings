@@ -39,10 +39,19 @@ def authorize
   credentials
 end
 
+def get_time(event_time)
+  if event_time.date_time
+    event_time.date_time.to_time
+  else
+    date_array = event_time.date.split("-")
+    Time.new(*date_array)
+  end
+end
+
 # in mins
 def duration(event)
-  start_time = event.start.date_time.to_time
-  end_time = event.end.date_time.to_time
+  start_time = get_time(event.start)
+  end_time = get_time(event.end)
   (end_time - start_time) / 60
 end
 
@@ -61,13 +70,16 @@ response = service.list_events(calendar_id,
                                time_min: one_week_ago.iso8601,
                                time_max: Time.now.iso8601)
 
-puts "Meetings last week:"
+puts "Meetings last week (starting #{one_week_ago.iso8601})"
 puts "No events found" if response.items.empty?
 total_meeting_min = 0
 response.items.each do |event|
   duration = duration(event)
-  total_meeting_min += duration
-  puts "- #{event.summary} (#{duration} min)"
+  if duration < (60*4)
+    total_meeting_min += duration
+    puts "- #{event.summary} (#{duration} min)"
+  end
 end
 
 puts "Total meeting time for past week: #{total_meeting_min} minutes"
+puts "Total meeting time for past week: #{total_meeting_min / 60.0} hours"
