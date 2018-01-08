@@ -39,6 +39,13 @@ def authorize
   credentials
 end
 
+# in mins
+def duration(event)
+  start_time = event.start.date_time.to_time
+  end_time = event.end.date_time.to_time
+  (end_time - start_time) / 60
+end
+
 # Initialize the API
 service = Google::Apis::CalendarV3::CalendarService.new
 service.client_options.application_name = APPLICATION_NAME
@@ -46,16 +53,21 @@ service.authorization = authorize
 
 # Fetch the next 10 events for the user
 calendar_id = 'primary'
+one_week_ago = Time.now - (60*60*24*7)
 response = service.list_events(calendar_id,
                                max_results: 10,
                                single_events: true,
                                order_by: 'startTime',
-                               time_min: Time.now.iso8601)
+                               time_min: one_week_ago.iso8601,
+                               time_max: Time.now.iso8601)
 
-puts "Upcoming events:"
-puts "No upcoming events found" if response.items.empty?
-p response.items[0]
+puts "Meetings last week:"
+puts "No events found" if response.items.empty?
+total_meeting_min = 0
 response.items.each do |event|
-  start = event.start.date || event.start.date_time
-  puts "- #{event.summary} (#{start})"
+  duration = duration(event)
+  total_meeting_min += duration
+  puts "- #{event.summary} (#{duration} min)"
 end
+
+puts "Total meeting time for past week: #{total_meeting_min} minutes"
