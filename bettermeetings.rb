@@ -61,6 +61,12 @@ def attended?(event)
   end
 end
 
+def busiest_day_of_week(day_of_week_map)
+  totals_per_day = day_of_week_map.values
+  days_of_week = day_of_week_map.keys
+  days_of_week[totals_per_day.index(totals_per_day.max)]
+end
+
 # Initialize the API
 service = Google::Apis::CalendarV3::CalendarService.new
 service.client_options.application_name = APPLICATION_NAME
@@ -79,6 +85,7 @@ response = service.list_events(calendar_id,
 puts "Meetings last week (starting #{one_week_ago.iso8601})"
 puts "No events found" if response.items.empty?
 total_meeting_min = 0
+day_of_week_map = Hash.new(0)
 response.items.each do |event|
   next if event.status == "cancelled"
   next unless event.attendees
@@ -89,11 +96,14 @@ response.items.each do |event|
   #how to inspect on single event
   duration = duration(event)
   if duration < (60*4)
-    total_meeting_min += duration
     day_of_week = event.start.date_time.strftime("%A")
+    day_of_week_map[day_of_week] += duration
+    total_meeting_min += duration
     puts "- [#{day_of_week}] #{event.summary} (#{duration} min)"
   end
 end
+busiest_day = busiest_day_of_week(day_of_week_map)
 
 puts "Total meeting time for past week: #{total_meeting_min} minutes"
 puts "Total meeting time for past week: #{total_meeting_min / 60.0} hours"
+puts "Busiest day of the week: #{busiest_day}, #{day_of_week_map[busiest_day] / 60.0} hours"
