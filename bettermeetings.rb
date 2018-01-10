@@ -55,6 +55,12 @@ def duration(event)
   (end_time - start_time) / 60
 end
 
+def attended?(event)
+  event.attendees.any? do |a|
+    a.email.match(/abhi/) && a.response_status == "accepted"
+  end
+end
+
 # Initialize the API
 service = Google::Apis::CalendarV3::CalendarService.new
 service.client_options.application_name = APPLICATION_NAME
@@ -64,7 +70,7 @@ service.authorization = authorize
 calendar_id = 'primary'
 one_week_ago = Time.now - (60*60*24*7)
 response = service.list_events(calendar_id,
-                               max_results: 10,
+                               max_results: 50,
                                single_events: true,
                                order_by: 'startTime',
                                time_min: one_week_ago.iso8601,
@@ -74,10 +80,18 @@ puts "Meetings last week (starting #{one_week_ago.iso8601})"
 puts "No events found" if response.items.empty?
 total_meeting_min = 0
 response.items.each do |event|
+  next if event.status == "cancelled"
+  next unless event.attendees
+  next unless attended?(event)
+  #if !!event.summary.match(/TWIL/)
+  #  require 'pry'; binding.pry
+  #end
+  #how to inspect on single event
   duration = duration(event)
   if duration < (60*4)
     total_meeting_min += duration
-    puts "- #{event.summary} (#{duration} min)"
+    day_of_week = event.start.date_time.strftime("%A")
+    puts "- [#{day_of_week}] #{event.summary} (#{duration} min)"
   end
 end
 
