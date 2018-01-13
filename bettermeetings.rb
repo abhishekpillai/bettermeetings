@@ -95,15 +95,16 @@ response.items.each do |event|
   #end
   #how to inspect on single event
   duration = duration(event)
-  if duration < (60*4)
-    day_of_week = event.start.date_time.strftime("%A")
-    day_of_week_map[day_of_week] += duration
-    total_meeting_min += duration
-    puts "- [#{day_of_week}] #{event.summary} (#{duration} min)"
-  end
+  next if duration > (60*4) # skip if > 4 hours
+  # TODO: add 10 minutes before and after meetings (unless there is another meeting) to account for context switch
+  day_of_week = event.start.date_time.strftime("%A")
+  day_of_week_map[day_of_week] += duration
+  total_meeting_min += duration
+  puts "- [#{day_of_week}] #{event.summary} (#{duration} min)"
 end
 busiest_day = busiest_day_of_week(day_of_week_map)
 
 puts "Total meeting time for past week: #{total_meeting_min} minutes"
 puts "Total meeting time for past week: #{total_meeting_min / 60.0} hours"
+# TODO: show total minutes and hours including context switch
 puts "Busiest day of the week: #{busiest_day}, #{day_of_week_map[busiest_day] / 60.0} hours"
