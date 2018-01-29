@@ -67,6 +67,12 @@ def busiest_day_of_week(day_of_week_map)
   days_of_week[totals_per_day.index(totals_per_day.max)]
 end
 
+def freeest_day_of_week(day_of_week_map)
+  totals_per_day = day_of_week_map.values
+  days_of_week = day_of_week_map.keys
+  days_of_week[totals_per_day.index(totals_per_day.min)]
+end
+
 # Initialize the API
 service = Google::Apis::CalendarV3::CalendarService.new
 service.client_options.application_name = APPLICATION_NAME
@@ -76,7 +82,7 @@ service.authorization = authorize
 calendar_id = 'primary'
 one_week_ago = Time.now - (60*60*24*7)
 response = service.list_events(calendar_id,
-                               max_results: 50,
+                               max_results: 100,
                                single_events: true,
                                order_by: 'startTime',
                                time_min: one_week_ago.iso8601,
@@ -103,8 +109,10 @@ response.items.each do |event|
   puts "- [#{day_of_week}] #{event.summary} (#{duration} min)"
 end
 busiest_day = busiest_day_of_week(day_of_week_map)
+freeest_day = freeest_day_of_week(day_of_week_map)
 
 puts "Total meeting time for past week: #{total_meeting_min} minutes"
 puts "Total meeting time for past week: #{total_meeting_min / 60.0} hours"
 # TODO: show total minutes and hours including context switch
 puts "Busiest day of the week: #{busiest_day}, #{day_of_week_map[busiest_day] / 60.0} hours"
+puts "Free-est day of the week: #{freeest_day}, #{day_of_week_map[freeest_day] / 60.0} hours"
